@@ -31,7 +31,7 @@ public class AST{
 	public static class expression extends ASTNode {
 		String type;
 		public expression(){
-			type = "_no_type";
+			type = "No_type";
 		}
 		String getString(String space){
 			return "";
