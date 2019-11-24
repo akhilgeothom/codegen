@@ -139,34 +139,23 @@ ret i8* %str
  }
 
 %class.Main = type { i32, i8*, %class.Main.Base }
-
 ; Class Initializtion Methods
-
 define void @init_Main(%struct.Main* %a1) {
-
 %v0 = getelementptr %struct.Main, %struct.Main* %a1, i32 0, i32 0
-
 store i8 1, i8* %v0
-
 ret void
 }
-
 
 
 
 ; Class Methods Definitions
 
 define i8* @_CN4_Main_FN4main_AL0_NP_() {
-
 @g1 = private unnamed_addr constant [4 x i8] c"Main"
-
 %v1 = getelementptr inbounds [4 x i8], [4 x i8]* @g1, i32 0, i32 0
-
 ret i8* %v1
 }
 
-
 ; Main Function
-
 
 

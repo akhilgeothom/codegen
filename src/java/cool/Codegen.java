@@ -16,6 +16,8 @@ public class Codegen{
 
     private HashMap<String,ArrayList<AST.attr>> classAttrs = new HashMap<String,ArrayList<AST.attr>>();
 
+    private String className;
+
     public Codegen(AST.program program, PrintWriter out){
         // out.println("; I am a comment in LLVM-IR. Feel free to remove me.");
 
@@ -68,18 +70,18 @@ public class Codegen{
             // Codegen.progOut = Codegen.progOut.substring(0,Codegen.progOut.length()-1);
             out.println(" }\n");
             
-            out.println("%class." + cl.name + " = type { i32, i8*, %class." + cl.name + ".Base }\n");
+            out.println("%class." + cl.name + " = type { i32, i8*, %class." + cl.name + ".Base }");
 
             classAttrs.put(cl.name,attrs);
         }
 
-        out.println("; Class Initializtion Methods\n");
+        out.println("; Class Initializtion Methods");
         for(AST.class_ cl: program.classes)
         {
             String clTyp = "%struct." + cl.name;
-            out.println("define void @init_" + cl.name + "(" + clTyp + "* %a1) {\n");
-            out.println("%v0 = getelementptr " + clTyp + ", " + clTyp + "* %a1, i32 0, i32 0\n");
-            out.println("store i8 1, i8* %v0\n");
+            out.println("define void @init_" + cl.name + "(" + clTyp + "* %a1) {");
+            out.println("%v0 = getelementptr " + clTyp + ", " + clTyp + "* %a1, i32 0, i32 0");
+            out.println("store i8 1, i8* %v0");
 
             Integer idx = 1;
             ArrayList<AST.attr> attrs = classAttrs.get(cl.name);
@@ -89,38 +91,37 @@ public class Codegen{
                 if(atTyp.equals("SELF_TYPE"))
                     continue;
 
-                out.println("%v" + idx + " = getelementptr " + clTyp + ", " + clTyp + "* %a1, i32 0, i32 " + idx + "\n");
+                out.println("%v" + idx + " = getelementptr " + clTyp + ", " + clTyp + "* %a1, i32 0, i32 " + idx);
                 switch(atTyp)
                 {
                     case "Bool" :
-                        out.println("store i8 0, i8* %v" + idx + "\n");
+                        out.println("store i8 0, i8* %v" + idx);
                         break;
                     case "Int" :
-                        out.println("store i32 0, i32* %v" + idx + "\n");
+                        out.println("store i32 0, i32* %v" + idx);
                         break;
                     case "String" :
-                        out.println("%str" + idx + " = getelementptr inbounds [1 x i8], [1 x i8]* @nullStr, i32 0, i32 0\n");
-                        out.println("store i8* %str" + idx + ", i8** %v" + idx + "\n");
+                        out.println("%str" + idx + " = getelementptr inbounds [1 x i8], [1 x i8]* @nullStr, i32 0, i32 0");
+                        out.println("store i8* %str" + idx + ", i8** %v" + idx);
                         break;
                     default :
-                        out.println("%set" + idx + " = getelementptr %struct." + atTyp + ", %struct." + atTyp + "* %v" + idx + ", i32 0, i32 0\n");
-                        out.println("store i8 0, i8* %set" + idx + "\n");
+                        out.println("%set" + idx + " = getelementptr %struct." + atTyp + ", %struct." + atTyp + "* %v" + idx + ", i32 0, i32 0");
+                        out.println("store i8 0, i8* %set" + idx);
                 }
             }
 
-            out.println("ret void\n}\n\n");
+            out.println("ret void\n}\n");
         }
         out.println("\n");
         out.println("; Class Methods Definitions\n");
         
-        String className;
         
         for(AST.class_ cl: program.classes)
         {
             if(!cl.name.equals("Main"))
             {
                 className = cl.name;
-                Visit(cl);  //class
+                Visit(cl, out);  //class
             }
             else{
                 className = "Main";
@@ -131,12 +132,12 @@ public class Codegen{
 
                         // if(entry.getKey().equals("type_name"))
                         {
-                            out.println("define i8* @"+getMangledName(className,(AST.method)e)+"() {\n");
+                            out.println("define i8* @"+getMangledName(className,(AST.method)e)+"() {");
                             String arStr = "[4 x i8]";
-                            out.println("@g" + ++globCnt + " = private unnamed_addr constant " + arStr + " c\"Main\"\n"); 
+                            out.println("@g" + ++globCnt + " = private unnamed_addr constant " + arStr + " c\"Main\""); 
 
-                            out.println("%v1 = getelementptr inbounds " + arStr + ", " + arStr + "* @g" + globCnt + ", i32 0, i32 0\n");
-                            out.println("ret i8* %v1\n}\n");
+                            out.println("%v1 = getelementptr inbounds " + arStr + ", " + arStr + "* @g" + globCnt + ", i32 0, i32 0");
+                            out.println("ret i8* %v1\n}");
                         }
                         // else if(!baseFns.contains(entry.getKey()) && !entry.getKey().equals("copy"))  //dont understand
                         // {
@@ -145,7 +146,7 @@ public class Codegen{
                         // }
                     }
                 }
-                out.println("\n; Main Function\n");
+                out.println("\n; Main Function");
                 // AST.method md = mainClassMethods.get("main");
                 // out.println("define "+clNames.get(((AST.method)md).typeid)+" @main (");
                 // Visit(md);  //method
@@ -186,13 +187,30 @@ public class Codegen{
         // Codegen.progOut = globOut + "\n" + Codegen.progOut;
     }
 
-    public void Visit(AST.class_ cl){
+    public void Visit(AST.class_ cl, PrintWriter out){
+        // for(Map.Entry<String,AST.method> entry: Semantic.inheritance.GetClassMethods(cl.name).entrySet())
+        for(AST.feature entry: cl.features)
+        {
+            if(((AST.method)entry).name.equals("type_name"))
+            {
+                out.println("define i8* @"+getMangledName(className,(AST.method)entry)+"() {");
+                String arStr = "[" + className.length() + " x i8]";
+                out.println("@g" + ++globCnt + " = private unnamed_addr constant " + arStr + " c\"" + className + "\""); 
+
+                out.println("%v1 = getelementptr inbounds " + arStr + ", " + arStr + "* @g" + globCnt + ", i32 0, i32 0");
+                out.println("ret i8* %v1\n}\n");
+            }
+            else if(!baseFns.contains(((AST.method)entry).name) && !((AST.method)entry).name.equals("copy"))
+            {
+                out.println("define "+clNames.get(((AST.method)entry).typeid)+" @"+getMangledName(className,(AST.method)entry)+"(");
+                Visit((AST.method)entry, out);  //methods
+            }
+        }
+    }
+    public void Visit(AST.method md, PrintWriter out){
 
     }
-    public void Visit(AST.method md){
-
-    }
-    public void Visit(AST.expression expr, ScopeTable<String> varNames){
+    public void Visit(AST.expression expr, ScopeTable<String> varNames, PrintWriter out){
 
     }
 
