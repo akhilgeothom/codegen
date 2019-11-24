@@ -156,8 +156,8 @@ public class Codegen{
         // Codegen.progOut = globOut + "\n" + Codegen.progOut;
     }
 
-    public Visit(AST.class_ cl){
-
+    public void Visit(AST.class_ cl){
+        
     }
     public String getMangledName(String className,AST.method md) {
         String temp = "";
