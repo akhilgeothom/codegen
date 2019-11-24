@@ -7,6 +7,11 @@ public class Visitor
 	private ScopeTable<String> scopeTable;
 	private String filename;
 	private String clName;
+	IRPrinter display = new IRPrinter; //Added
+	OpType string_type = new OpType(OpTypeId.INT8_PTR); //Added
+	OpType int_type = new OpType(OpTypeId.INT32); //Added
+	OpType bool_type = new OpType(OpTypeId.INT1); //Added
+	OpType void_type = new OpType(OpTypeId.VOID); //Added
 
 	//Constructor
 	public Visitor(){
@@ -43,18 +48,68 @@ public class Visitor
 		filename = cl.filename;
 		clName = cl.name;
 
-		//Insert all declared Class attributes into Scope Table
-		for(Map.Entry<String,AST.attr> entry: Semantic.inheritance.GetClassAttrs(cl.name).entrySet()){
-			Visit(entry.getValue());
-			scopeTable.insert(entry.getKey(),entry.getValue().typeid);
-		}
+		List<AST.attr> cur_class_attributes = new ArrayList<AST.attr>();
+	    List<AST.method> cur_class_methods = new ArrayList<AST.method>();
 
-		//Visit all the Class methods
-		for(Map.Entry<String,AST.method> entry: Semantic.inheritance.GetClassMethods(cl.name).entrySet())
-			Visit(entry.getValue());
+	    for (AST.feature f : cur_class.features) {
+	    	if (f instanceof AST.attr) {
+	        	AST.attr cur_attr = (AST.attr)f;
+	        	cur_class_attributes.add(cur_attr);
+	      	} 
+	      	else if (f instanceof AST.method) {
+	        	AST.method cur_method = (AST.method)f;
+	        	cur_class_methods.add(cur_method);
+	      	}
+	    }
 
-		//Exit scope before leaving Class
-		scopeTable.exitScope();
+	    if (cur_class.parent == null) {
+	      	classList.put(cur_class.name, new ClassNode(cur_class.name, cur_class.name, cur_class_attributes, cur_class_methods));
+	    } 
+	    else {
+	     	classList.put(cur_class.name, new ClassNode(cur_class.name, cur_class.parent, cur_class_attributes, cur_class_methods));
+	    }
+
+	    for (AST.feature f : cur_class.features) {
+	    	if (clName.equals("Main")) {
+	    		display.define(out, int_type, "main", new ArrayList<Operand>());
+		        display.allocaOperand(out, get_optype("Main", true, 0), new Operand(get_optype("Main", true, 1), "obj"));
+		        List<Operand> op_list = new ArrayList<Operand>();
+		        op_list.add(new Operand(get_optype("Main", true, 1), "obj"));
+		        display.callOperand(out, new ArrayList<OpType>(), "Main_Cons_Main", true, op_list, new Operand(get_optype("Main", true, 1), "obj1"));
+		        op_list.set(0, new Operand(get_optype("Main", true, 1), "obj1"));
+		        display.callOperand(out, new ArrayList<OpType>(), "Main_main", true, op_list, new Operand(void_type, "null"));
+		        display.retOperand(out, (Operand)new IntValue(0));
+	    	}
+
+	    	if (clName.equals("Int") || clName.equals("String") || clName.equals("Bool") || clName.equals("Object") || clName.equals("IO")) {
+	    		if (clName.equals("String")){
+	    			out.print("String funcs"); //To be added
+	    		}
+	    		else if (clName.equals("Object")){
+	    			out.print("Abort");
+	    			display.typeDefine(out, clName, new ArrayList<OpType>());
+	    			//build_constructor
+	    		}
+	    		else if (cl.name.equals("IO")) {
+		        	out.print("IO funcs"); //To be added
+		          	display.typeDefine(out, cl.name, new ArrayList<OpType>());
+		          	//build_constructor(out, cl.name, new Tracker());
+		        }
+		        continue;
+	    	}
+
+	    	// Taking the attributes of the class first and generating code for it
+	      	List<OpType> attribute_types = new ArrayList<OpType>();
+	      	for (AST.attr attribute : classList.get(clName).attributes) {
+	        	attribute_types.add(get_optype(attribute.typeid, true, 1));
+	        	if (attribute.typeid.equals("String") && attribute.value instanceof AST.string_const) { // Getting existing string constants
+	          		breakdown(out, attribute.value);
+	        	}
+	      	}
+
+	      	
+	    }
+
 	}
 
 	//Attribute Visitor
@@ -446,7 +501,7 @@ public class Visitor
 	}
 
 	//Initialize Base Class Expressions
-	public AST.expression BaseExprInit(String s, int l){
+	public AST.expression BaseExprInit(String s, int l) {
 		if("Int".equals(s))
 			return new AST.int_const(0,l);
 		if("Bool".equals(s))
@@ -455,4 +510,43 @@ public class Visitor
 			return new AST.string_const("",l);
 		return null;
 	}
+
+	public void breakdown(PrintWriter out, AST.expression expr) {
+	    if (expr instanceof AST.string_const) {
+		  	String cap_string = ((AST.string_const)expr).value;
+		  	string_table.put(cap_string, string_counter);
+		  	string_counter++;
+		  	out.print("@.str." + string_table.get(cap_string) + " = private unnamed_addr constant [" + String.valueOf(cap_string.length() + 1) + " x i8] c\"");
+		  	print_util.escapedString(out, cap_string);
+		  	out.println("\\00\"");
+	    } 
+	    else if (expr instanceof AST.eq) {
+	      	breakdown(out, ((AST.eq)expr).e1);
+	      	breakdown(out, ((AST.eq)expr).e2);
+	    } 
+	    else if (expr instanceof AST.assign) {
+	      	breakdown(out, ((AST.assign)expr).e1);
+	    } 
+	    else if (expr instanceof AST.block) {
+	      	for (AST.expression e : ((AST.block)expr).l1) {
+	        	breakdown(out, e);
+	      	}
+	    } 
+	    else if (expr instanceof AST.loop) {
+	      	breakdown(out, ((AST.loop)expr).predicate);
+	      	breakdown(out, ((AST.loop)expr).body);
+	    } 
+	    else if (expr instanceof AST.cond) {
+	      	breakdown(out, ((AST.cond)expr).predicate);
+	      	breakdown(out, ((AST.cond)expr).ifbody);
+	      	breakdown(out, ((AST.cond)expr).elsebody);
+	    } 
+	    else if (expr instanceof AST.static_dispatch) {
+	      	breakdown(out, ((AST.static_dispatch)expr).caller);
+	      	for (AST.expression e : ((AST.static_dispatch)expr).actuals) {
+	       		breakdown(out, e);
+	      	}
+	    }
+	    return ;
+  	}
 }
