@@ -83,15 +83,22 @@ public class Visitor
 
 	    	if (clName.equals("Int") || clName.equals("String") || clName.equals("Bool") || clName.equals("Object") || clName.equals("IO")) {
 	    		if (clName.equals("String")){
-	    			out.print("String funcs"); //To be added
+	    			PreDefined.def_string(out, "length");
+					PreDefined.def_string(out, "concat");
+					PreDefined.def_string(out, "substr");
+					PreDefined.def_string(out, "copy");
+					PreDefined.def_string(out, "strcmp");
 	    		}
 	    		else if (clName.equals("Object")){
-	    			out.print("Abort");
+	    			PreDefined.def_object(out, "abort");
 	    			display.typeDefine(out, clName, new ArrayList<OpType>());
 	    			//build_constructor
 	    		}
 	    		else if (cl.name.equals("IO")) {
-		        	out.print("IO funcs"); //To be added
+					PreDefined.def_io(out, "in_int");
+					PreDefined.def_io(out, "in_string");
+					PreDefined.def_io(out, "out_int");
+					PreDefined.def_io(out, "out_string");
 		          	display.typeDefine(out, cl.name, new ArrayList<OpType>());
 		          	//build_constructor(out, cl.name, new Tracker());
 		        }
@@ -403,7 +410,7 @@ public class Visitor
 		}
 
 		//Dispatch
-		else if(exp instanceof AST.dispatch){
+		/*else if(exp instanceof AST.dispatch){
 			AST.dispatch expr = (AST.dispatch)exp;
 			Visit(expr.caller);
 
@@ -425,10 +432,10 @@ public class Visitor
 			else{
 				expr.type = Semantic.inheritance.GetClassMethods(expr.caller.type).get(expr.name).typeid;	
 			}
-		}
+		}*/
     
     	//Let
-		else if(exp instanceof AST.let){
+		/*else if(exp instanceof AST.let){
 			AST.let expr = (AST.let)exp;
 			scopeTable.enterScope();
 
@@ -448,7 +455,7 @@ public class Visitor
 			Visit(expr.body);
 			expr.type = expr.body.type;
 			scopeTable.exitScope();
-		}
+		}*/
   		
   		/*else if (exp instanceof AST.typcase){
 			AST.typcase expr = (AST.typcase) exp;
