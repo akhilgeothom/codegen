@@ -1,62 +1,172 @@
-; I am a comment in LLVM-IR. Feel free to remove me.
+; ModuleID = 'helloworld.cl'
+source_filename = "helloworld.cl"
 target datalayout = "e-m:e-i64:64-f80:128-n8:16:32:64-S128"
-target triple = "x86_64-unknown-linux-gnu"
-@Abortdivby0 = private unnamed_addr constant [22 x i8] c"Error: Division by 0\0A\00", align 1
-@Abortdispvoid = private unnamed_addr constant [25 x i8] c"Error: Dispatch on void\0A\00", align 1
+target triple = "x86_64-pc-linux-gnu"
 
-declare i32 @printf(i8*, ...)
-declare i32 @scanf(i8*, ...)
-declare i32 @strcmp(i8*, i8*)
-declare i8* @strcat(i8*, i8*)
-declare i8* @strcpy(i8*, i8*)
-declare i8* @strncpy(i8*, i8*, i32)
-declare i64 @strlen(i8*)
-declare i8* @malloc(i64)
+; Global Constants
+
+@dStr = private constant [2 x i8] c"%d"
+
+@sStr = private constant [2 x i8] c"%s"
+
+@nullStr = private unnamed_addr constant [1 x i8] zeroinitializer
+
+; C function
+
 declare void @exit(i32)
-@strformatstr = private unnamed_addr constant [3 x i8] c"%s\00", align 1
-@intformatstr = private unnamed_addr constant [3 x i8] c"%d\00", align 1
 
-%class.Object.Base = type { }
-%class.Object = type { i32, i8*, %class.Object.Base }
+; C function
 
-%class.IO.Base = type {%class.Object.Base* }
-%class.IO = type { i32, i8*, %class.IO.Base }
+declare i8* @malloc(i64)
 
-%class.Main.Base = type {%class.Object.Base* }
-%class.Main = type { i32, i8*, %class.Main.Base }
+; C function
 
-@_ZTV6Object = constant [3 x i8*] [i8* bitcast (%class.Object* ( %class.Object* )* @_ZN6Object5abort to i8*), i8* bitcast ([1024 x i8]* ( %class.Object* )* @_ZN6Object9type_name to i8*), i8* bitcast (i32 ( %class.Object* )* @_ZN6Object4copy to i8*)] 
-@_ZTV2IO = constant [7 x i8*] [i8* bitcast (%class.Object* ( %class.Object* )* @_ZN6Object5abort to i8*), i8* bitcast ([1024 x i8]* ( %class.Object* )* @_ZN6Object9type_name to i8*), i8* bitcast (%class.IO* ( %class.IO* )* @_ZN2IO4copy to i8*), i8* bitcast (%class.IO* ( %class.IO*, [1024 x i8]* )* @_ZN2IO10out_string to i8*), i8* bitcast (%class.IO* ( %class.IO*, i32 )* null to i8*), i8* bitcast ([1024 x i8]* ( %class.IO* )* @_ZN2IO9in_string to i8*), i8* bitcast (i32 ( %class.IO* )* @_ZN2IO9in_int to i8*)] 
-@_ZTV4Main = constant [4 x i8*] [i8* bitcast (%class.Object* ( %class.Object* )* @_ZN6Object5abort to i8*), i8* bitcast ([1024 x i8]* ( %class.Object* )* @_ZN6Object9type_name to i8*), i8* bitcast (i32 ( %class.Object* )* @_ZN4Main4copy to i8*), i8* bitcast (%class.IO* (  )* @_ZN4Main4main to i8*)] 
-define %classObject* @_ZN6Object5abort( %class.Object* %this ) noreturn {
-entry:
-call void @exit( i32 1 )
-ret %classObject* null
-}
+declare i32 @printf(i8* , ...)
 
-define void @_Z6ObjectBaseC ( %class.Object.Base ) {
-entry:
+; C function
+
+declare i32 @scanf(i8* , ..).)
+
+; C function
+
+declare i32 @strlen(i8*)
+
+; C function
+
+declare i8* @strcat(i8*, i8*)
+
+; C function
+
+declare i8* @strcpy(i8*, i8*)
+
+
+; Cool Function
+
+define void @abort(i32 %a1) {
+
+call void @exit(i32 %a1)
+
 ret void
 }
 
-define [1024 x i8]* @_ZN6Object9type_name( %class.Object* %this ) {
-entry:
-%0 = getelementptr inbounds %classObject, %classObject* %this, i32 0, i32 0
-%1 = load i32, i32* %0
-%2 = getelementptr inbounds [8 x [1024 x i8]], [8 x [1024 x i8]]* @classnames, i32 0, i32 %1
-%retval = call [1024 x i8]* @_ZN6String4copy( [1024 x i8]* %2 )
-ret [1024 x i8]* %retval
+
+; Cool Function
+
+define void @out_string(i8* %a1) {
+
+call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([2 x i8], [2 x i8]* @sStr, i32 0, i32 0),i8* %a1)
+
+ret void
 }
 
-define void @_Z2IOBaseC ( %IO.Base*%this ) { 
-entry: 
-%0 = getelementptr inbouds %class.Object.Base.Base, class.Object.Base.Base* %this, i32 0, i32 0
-call void @_Z11Object.BaseBaseC( %class.Object.Base.Base*%0
-return void
-define void @_Z4MainBaseC ( %Main.Base*%this ) { 
-entry: 
-%0 = getelementptr inbouds %class.Object.Base.Base, class.Object.Base.Base* %this, i32 0, i32 0
-call void @_Z11Object.BaseBaseC( %class.Object.Base.Base*%0
-return void
-@.str = private unnamed_addr constant [14 x i8] c"Hello world!
-\00", align 1
+
+; Cool Function
+
+define void @in_string(i8* %a1) {
+
+call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([2 x i8], [2 x i8]* @sStr, i32 0, i32 0),i8* %a1)
+
+ret void
+}
+
+
+; Cool Function
+
+define void @out_int(i32 %a1) {
+
+call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([2 x i8], [2 x i8]* @dStr, i32 0, i32 0),i32 %a1)
+
+ret void
+}
+
+
+; Cool Function
+
+define i32 @in_int() {
+
+%v1 = alloca i32
+
+call i32 (i8*, ...) @scanf(i8* getelementptr inbounds ([2 x i8], [2 x i8]* @sStr, i32 0, i32 0),i32* %v1)
+
+%v2 = load i32, i32* %v1
+
+ret i32 %v2
+}
+
+
+
+; Cool Function
+
+define i32 @length(i8* %a1) {
+
+%v1 = call i32 @strlen(i8* %a1)
+
+ret i32 %v1
+}
+
+
+; Cool Function
+
+define i8* @concat(i8* %a1, i8* %a2){
+
+call i8* @strcat(i8* %a1, i8* %a2)
+
+ret i8* %a1
+}
+
+
+; Cool Function
+
+define i8* @substr(i8* %s, i32 %i, i32 %l){
+
+%z = zext i32 %l to i64
+
+%str = call noalias i8* @malloc(i64 %z)
+
+%ptr = getelementptr inbounds i8, i8* %s, i32 %i
+
+%foo = call i8* @strncpy(i8* %str, i8* %ptr, i64 %z)
+
+ret i8* %str
+}
+
+
+
+
+
+
+%class.Main = type { i8,
+ }
+
+%class.Main = type { i32, i8*, %class.Main.Base }
+
+; Class Initializtion Methods
+
+define void @init_Main(%struct.Main* %a1) {
+
+%v0 = getelementptr %struct.Main, %struct.Main* %a1, i32 0, i32 0
+
+store i8 1, i8* %v0
+
+ret void
+}
+
+
+
+
+; Class Methods Definitions
+
+define i8* @_CN4_Main_FN4main_AL0_NP_() {
+
+@g1 = private unnamed_addr constant [4 x i8] c"Main"
+
+%v1 = getelementptr inbounds [4 x i8], [4 x i8]* @g1, i32 0, i32 0
+
+ret i8* %v1
+}
+
+
+; Main Function
+
+
+

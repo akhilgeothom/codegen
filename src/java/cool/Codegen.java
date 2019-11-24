@@ -8,7 +8,7 @@ public class Codegen{
 
     // private Integer varCnt;
     // private Integer labCnt;
-    // private Integer globCnt;
+    private Integer globCnt;
 
     private HashMap<String,String> clNames = new HashMap<String,String>();
 
@@ -37,7 +37,7 @@ public class Codegen{
 
         // varCnt = 0;
         // labCnt = 0;
-        // globCnt = 0;
+        globCnt = 0;
         
         clNames.put("Int","i32");
         clNames.put("String","i8*");
@@ -79,7 +79,7 @@ public class Codegen{
             String clTyp = "%struct." + cl.name;
             out.println("define void @init_" + cl.name + "(" + clTyp + "* %a1) {\n");
             out.println("%v0 = getelementptr " + clTyp + ", " + clTyp + "* %a1, i32 0, i32 0\n");
-            out.println(+ "store i8 1, i8* %v0\n");
+            out.println("store i8 1, i8* %v0\n");
 
             Integer idx = 1;
             ArrayList<AST.attr> attrs = classAttrs.get(cl.name);
@@ -113,6 +113,8 @@ public class Codegen{
         out.println("\n");
         out.println("; Class Methods Definitions\n");
         
+        String className;
+        
         for(AST.class_ cl: program.classes)
         {
             if(!cl.name.equals("Main"))
@@ -120,45 +122,80 @@ public class Codegen{
                 className = cl.name;
                 Visit(cl);  //class
             }
+            else{
+                className = "Main";
+                for(AST.feature e :cl.features){
+                    if(e.getClass() == AST.method.class){
+                        // if(e.getValue().name.equals("main"))
+                        //     continue;
+
+                        // if(entry.getKey().equals("type_name"))
+                        {
+                            out.println("define i8* @"+getMangledName(className,(AST.method)e)+"() {\n");
+                            String arStr = "[4 x i8]";
+                            out.println("@g" + ++globCnt + " = private unnamed_addr constant " + arStr + " c\"Main\"\n"); 
+
+                            out.println("%v1 = getelementptr inbounds " + arStr + ", " + arStr + "* @g" + globCnt + ", i32 0, i32 0\n");
+                            out.println("ret i8* %v1\n}\n");
+                        }
+                        // else if(!baseFns.contains(entry.getKey()) && !entry.getKey().equals("copy"))  //dont understand
+                        // {
+                        //     out.println("define "+clNames.get(entry.getValue().typeid)+" @"+getMangledName(className,entry.getValue())+"(");
+                        //     Visit(entry.getValue());
+                        // }
+                    }
+                }
+                out.println("\n; Main Function\n");
+                // AST.method md = mainClassMethods.get("main");
+                // out.println("define "+clNames.get(((AST.method)md).typeid)+" @main (");
+                // Visit(md);  //method
+            }
         }
-        Codegen.progOut += "\n";
+        out.println("\n");
 
         //Insert Main Methods
-        HashMap<String,AST.method> mainClassMethods = Semantic.inheritance.GetClassMethods("Main");
-        className = "Main";
-        for(Map.Entry<String,AST.method> entry: mainClassMethods.entrySet()){
-            if(entry.getValue().name.equals("main"))
-                continue;
+        // HashMap<String,AST.method> mainClassMethods = Semantic.inheritance.GetClassMethods("Main");
+        // className = "Main";
+        // for(Map.Entry<String,AST.method> entry: mainClassMethods.entrySet()){
+        //     if(entry.getValue().name.equals("main"))
+        //         continue;
 
-            if(entry.getKey().equals("type_name"))
-            {
-                out.println("define i8* @"+Semantic.inheritance.GetMangledName(className,entry.getValue())+"() {\n");
-                String arStr = "[4 x i8]";
-                out.println("@g" + ++globCnt + " = private unnamed_addr constant " + arStr + " c\"Main\"\n"); 
+        //     if(entry.getKey().equals("type_name"))
+        //     {
+        //         out.println("define i8* @"+getMangledName(className,entry.getValue())+"() {\n");
+        //         String arStr = "[4 x i8]";
+        //         out.println("@g" + ++globCnt + " = private unnamed_addr constant " + arStr + " c\"Main\"\n"); 
 
-                out.println("%v1 = getelementptr inbounds " + arStr + ", " + arStr + "* @g" + globCnt + ", i32 0, i32 0\n");
-                out.println("ret i8* %v1\n}\n");
-            }
-            else if(!baseFns.contains(entry.getKey()) && !entry.getKey().equals("copy"))  //dont understand
-            {
-                out.println("define "+clNames.get(entry.getValue().typeid)+" @"+Semantic.inheritance.GetMangledName(className,entry.getValue())+"(");
-                Visit(entry.getValue());
-            }
-        }
+        //         out.println("%v1 = getelementptr inbounds " + arStr + ", " + arStr + "* @g" + globCnt + ", i32 0, i32 0\n");
+        //         out.println("ret i8* %v1\n}\n");
+        //     }
+        //     else if(!baseFns.contains(entry.getKey()) && !entry.getKey().equals("copy"))  //dont understand
+        //     {
+        //         out.println("define "+clNames.get(entry.getValue().typeid)+" @"+getMangledName(className,entry.getValue())+"(");
+        //         Visit(entry.getValue());
+        //     }
+        // }
 
         //main() Function
-        out.println("\n; Main Function\n");
-        AST.method md = mainClassMethods.get("main");
-        out.println("define "+clNames.get(md.typeid)+" @main (");
-        Visit(md);  //method
+        // out.println("\n; Main Function\n");
+        // AST.method md = mainClassMethods.get("main");
+        // out.println("define "+clNames.get(md.typeid)+" @main (");
+        // Visit(md);  //method
 
         //Concat Global variables to Output
         // Codegen.progOut = globOut + "\n" + Codegen.progOut;
     }
 
-    public Visit(AST.class_ cl){
+    public void Visit(AST.class_ cl){
 
     }
+    public void Visit(AST.method md){
+
+    }
+    public void Visit(AST.expression expr, ScopeTable<String> varNames){
+
+    }
+
     public String getMangledName(String className,AST.method md) {
         String temp = "";
         temp += "_CN";
