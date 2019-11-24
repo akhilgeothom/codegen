@@ -67,12 +67,98 @@ public class Codegen{
             // }
             // Codegen.progOut = Codegen.progOut.substring(0,Codegen.progOut.length()-1);
             out.println(" }\n");
+            
+            out.println("%class." + cl.name + " = type { i32, i8*, %class." + cl.name + ".Base }\n");
+
             classAttrs.put(cl.name,attrs);
         }
 
+        out.println("; Class Initializtion Methods\n");
+        for(AST.class_ cl: program.classes)
+        {
+            String clTyp = "%struct." + cl.name;
+            out.println("define void @init_" + cl.name + "(" + clTyp + "* %a1) {\n");
+            out.println("%v0 = getelementptr " + clTyp + ", " + clTyp + "* %a1, i32 0, i32 0\n");
+            out.println(+ "store i8 1, i8* %v0\n");
 
+            Integer idx = 1;
+            ArrayList<AST.attr> attrs = classAttrs.get(cl.name);
+            for(; idx<=attrs.size(); idx++)
+            {
+                String atTyp = attrs.get(idx-1).typeid;
+                if(atTyp.equals("SELF_TYPE"))
+                    continue;
+
+                out.println("%v" + idx + " = getelementptr " + clTyp + ", " + clTyp + "* %a1, i32 0, i32 " + idx + "\n");
+                switch(atTyp)
+                {
+                    case "Bool" :
+                        out.println("store i8 0, i8* %v" + idx + "\n");
+                        break;
+                    case "Int" :
+                        out.println("store i32 0, i32* %v" + idx + "\n");
+                        break;
+                    case "String" :
+                        out.println("%str" + idx + " = getelementptr inbounds [1 x i8], [1 x i8]* @nullStr, i32 0, i32 0\n");
+                        out.println("store i8* %str" + idx + ", i8** %v" + idx + "\n");
+                        break;
+                    default :
+                        out.println("%set" + idx + " = getelementptr %struct." + atTyp + ", %struct." + atTyp + "* %v" + idx + ", i32 0, i32 0\n");
+                        out.println("store i8 0, i8* %set" + idx + "\n");
+                }
+            }
+
+            out.println("ret void\n}\n\n");
+        }
+        out.println("\n");
+        out.println("; Class Methods Definitions\n");
+        
+        for(AST.class_ cl: program.classes)
+        {
+            if(!cl.name.equals("Main"))
+            {
+                className = cl.name;
+                Visit(cl);  //class
+            }
+        }
+        Codegen.progOut += "\n";
+
+        //Insert Main Methods
+        HashMap<String,AST.method> mainClassMethods = Semantic.inheritance.GetClassMethods("Main");
+        className = "Main";
+        for(Map.Entry<String,AST.method> entry: mainClassMethods.entrySet()){
+            if(entry.getValue().name.equals("main"))
+                continue;
+
+            if(entry.getKey().equals("type_name"))
+            {
+                out.println("define i8* @"+Semantic.inheritance.GetMangledName(className,entry.getValue())+"() {\n");
+                String arStr = "[4 x i8]";
+                out.println("@g" + ++globCnt + " = private unnamed_addr constant " + arStr + " c\"Main\"\n"); 
+
+                out.println("%v1 = getelementptr inbounds " + arStr + ", " + arStr + "* @g" + globCnt + ", i32 0, i32 0\n");
+                out.println("ret i8* %v1\n}\n");
+            }
+            else if(!baseFns.contains(entry.getKey()) && !entry.getKey().equals("copy"))  //dont understand
+            {
+                out.println("define "+clNames.get(entry.getValue().typeid)+" @"+Semantic.inheritance.GetMangledName(className,entry.getValue())+"(");
+                Visit(entry.getValue());
+            }
+        }
+
+        //main() Function
+        out.println("\n; Main Function\n");
+        AST.method md = mainClassMethods.get("main");
+        out.println("define "+clNames.get(md.typeid)+" @main (");
+        Visit(md);  //method
+
+        //Concat Global variables to Output
+        // Codegen.progOut = globOut + "\n" + Codegen.progOut;
     }
 
+    public Visit(AST.class_ cl){
+
+    }
     public String getMangledName(String className,AST.method md) {
         String temp = "";
         temp += "_CN";
@@ -102,10 +188,10 @@ public class Codegen{
     }
 
     void builtInFns(PrintWriter out) {
-        globOut += "; Global Constants\n";
-        globOut += "@dStr = private constant [2 x i8] c\"%d\"\n";
-        globOut += "@sStr = private constant [2 x i8] c\"%s\"\n";
-        globOut += "@nullStr = private unnamed_addr constant [1 x i8] zeroinitializer\n";
+        out.println("; Global Constants\n");
+        out.println("@dStr = private constant [2 x i8] c\"%d\"\n");
+        out.println("@sStr = private constant [2 x i8] c\"%s\"\n");
+        out.println("@nullStr = private unnamed_addr constant [1 x i8] zeroinitializer\n");
 
         out.println("; C function\n");
         out.println("declare void @exit(i32)\n");
